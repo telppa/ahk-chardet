@@ -8,7 +8,7 @@
 将 MaxReadBytes 参数设为0可读取整个文件。
 
 以下4种编码无法通过指定 FileEncoding CPxxxx 的形式在 ahk 中进行转换并正确显示
-但下面的链接中提供了一种基于 DllCall("LCMapStringW") 的额外方法进行转换
+但下面的链接中提供了一种基于 DllCall("LCMapStringW") 的方法对 utf-16be 进行转换
 参考链接：https://www.autohotkey.com/board/topic/81138-solved-encoding-problem-ucs-2-big-endian/
 	euc-tw
 	iso-2022-kr
@@ -36,8 +36,10 @@ FileGetCharset(Path, MaxReadBytes := 10485760) {
 	}
 	else
 	{
-		f.Pos         := 0 ; 这句是必需的，删除会影响 utf-32 识别结果
-		out_var_bytes := f.RawRead(out_var, (MaxReadBytes = 0 ? f.Length : MaxReadBytes))
+		; 这句是必需的，删除会影响 utf-32 识别结果
+		f.Pos         := 0
+		; 当读取一个1-6字节的文件时， out_var_bytes 会返回6（原因未知），且无法使用 VarSetCapacity() 缩小变量
+		out_var_bytes := f.RawRead(out_var, (MaxReadBytes = 0 ? f.Length : Min(f.Length, MaxReadBytes)))
 		f.Close()
 		
 		return VarGetCharset(out_var, out_var_bytes)
